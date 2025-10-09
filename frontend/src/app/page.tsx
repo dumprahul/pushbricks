@@ -1,103 +1,154 @@
 import Image from "next/image";
+import Link from "next/link";
+import pushChain from "../../public/push-chain.png"
+import Footer from "../components/footer";
+import SiteHeader from "@/components/header";
 
-export default function Home() {
+export default function Page() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <>
+      <SiteHeader />
+      <main className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+      {/* Hero */}
+      <section className="rounded-none border-2 border-border bg-white p-8 shadow-[6px_6px_0_var(--color-primary)] md:p-12">
+        <div className="flex items-start justify-between gap-6">
+          <div className="flex-1">
+            <div className="inline-block mb-4 rounded-none border-2 border-border bg-[var(--color-accent)] px-3 py-1 text-xs font-black uppercase tracking-wider">
+              Real-World Assets on Push Chain
+            </div>
+            <h1 className="text-pretty text-4xl font-extrabold leading-tight md:text-5xl lg:text-6xl">
+              Tokenize. Lease. Borrow.
+            </h1>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed opacity-90">
+              Turn property into programmable tokens with automated leasing, transparent auctions, and verifiable settlement.
+            </p>
+            <div className="mt-6 lg:hidden inline-flex items-center gap-2 text-sm">
+              <span className="font-bold opacity-70">Powered by</span>
+              {/* <span className="font-extrabold text-[var(--color-secondary)]">Push Chain</span> */}
+              <Image src={pushChain} alt="Push Chain" width={100} height={100} />
+            </div>
+            <div className="mt-6 lg:mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href="#get-started"
+                className="inline-flex items-center justify-center rounded-none border-2 border-border bg-[var(--color-primary)] px-6 py-3 text-sm font-bold text-white shadow-[4px_4px_0_var(--color-border)] transition-all active:translate-y-[2px] active:shadow-[2px_2px_0_var(--color-border)] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--color-border)]"
+              >
+                Launch App
+              </Link>
+              <Link
+                href="/marketplace"
+                className="inline-flex items-center justify-center rounded-none border-2 border-border bg-white px-6 py-3 text-sm font-bold text-foreground transition-colors hover:bg-[var(--color-secondary)] hover:text-white"
+              >
+                Explore Properties
+              </Link>
+            </div>
+          </div>
+          <div className="hidden lg:block rounded-none border-2 border-border bg-[var(--color-secondary)]/60 p-4 shadow-[4px_4px_0_var(--color-border)]">
+            <div className="text-sm font-bold text-white">Powered by</div>
+            {/* <div className="mt-1 text-xl font-extrabold text-[var(--color-accent)]">Push Chain</div> */}
+            <Image src={pushChain} alt="Push Chain" width={100} height={100} className="mt-1" />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          </div>
         </div>
+      </section>
+
+      {/* Features */}
+      <section id="features" className="mt-12">
+        <h3 className="text-xl font-extrabold">Features</h3>
+        <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              title: "Tokenize Assets",
+              desc: "Mint compliant property tokens that represent ownership or revenue share.",
+            },
+            {
+              title: "Lease & Borrow",
+              desc: "Smart contracts for leasing flows and collateralized borrowing.",
+            },
+            {
+              title: "Dutch Auctions",
+              desc: "On-chain price discovery with transparent participation and settlement.",
+            },
+            {
+              title: "Push Notifications",
+              desc: "Protocol-native alerts for bids, leases, repayments, and expirations.",
+            },
+          ].map((f) => (
+            <div
+              key={f.title}
+              className="rounded-none border-2 border-border bg-white p-5 shadow-[6px_6px_0_var(--color-primary)]"
+            >
+              <div className="mb-2 inline-block rounded-none border-2 border-border bg-[var(--color-accent)] px-2 py-1 text-xs font-black">
+                {f.title}
+              </div>
+              <p className="text-sm leading-relaxed">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section id="how-it-works" className="mt-14">
+        <h3 className="text-xl font-extrabold">How It Works</h3>
+        <ol className="mt-6 grid gap-6 md:grid-cols-3">
+          {[
+            {
+              n: "01",
+              title: "Tokenize",
+              desc: "Define property, compliance rules, and mint tokens for ownership or yield claims.",
+            },
+            {
+              n: "02",
+              title: "List",
+              desc: "Open leasing or Dutch auction flows with on-chain rules and notifications.",
+            },
+            {
+              n: "03",
+              title: "Settle",
+              desc: "Execute trust-minimized settlement and track income streams programmatically.",
+            },
+          ].map((s) => (
+            <li
+              key={s.n}
+              className="rounded-none border-2 border-border bg-white p-5 shadow-[6px_6px_0_var(--color-primary)]"
+            >
+              <div className="flex items-start gap-4">
+                <div className="rounded-none border-2 border-border bg-[var(--color-accent)] px-3 py-2 text-sm font-extrabold">
+                  {s.n}
+                </div>
+                <div>
+                  <h4 className="text-base font-extrabold">{s.title}</h4>
+                  <p className="mt-1 text-sm leading-relaxed">{s.desc}</p>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* CTA */}
+      <section
+        id="get-started"
+        className="mt-14 rounded-none border-2 border-border bg-white p-6 shadow-[6px_6px_0_var(--color-primary)] md:p-10"
+      >
+        <div className="grid items-center gap-4 md:grid-cols-3">
+          <h3 className="md:col-span-2 text-pretty text-2xl font-extrabold">
+            Own your first on-chain real estate today.
+          </h3>
+          <div className="flex md:justify-end">
+            <Link
+              href="#"
+              className="inline-flex items-center justify-center rounded-none border-2 border-border bg-[var(--color-accent)] px-5 py-3 text-sm font-black text-foreground shadow-[4px_4px_0_var(--color-primary)] transition-all active:translate-y-[2px] active:shadow-[2px_2px_0_var(--color-primary)] hover:shadow-[2px_2px_0_var(--color-border)] hover:translate-y-[2px]"
+              aria-label="Get Started"
+            >
+              Get Started
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <Footer />
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    </>
+  )
 }
