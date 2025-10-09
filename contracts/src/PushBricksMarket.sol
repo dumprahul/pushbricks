@@ -9,7 +9,6 @@ import {PushBricksRegistry} from "./PushBricksRegistry.sol";
 
 // Market contract executes cross-chain aware intents by classifying caller origin via IUEAFactory
 contract PushBricksMarket is Ownable, ReentrancyGuard {
-    IUEAFactory public immutable factory;
     PushBricksRegistry public immutable registry;
 
     // Per-property per-chain counters for actions
@@ -32,17 +31,35 @@ contract PushBricksMarket is Ownable, ReentrancyGuard {
         uint256 newCount
     );
 
-    constructor(address initialOwner, IUEAFactory factory_, PushBricksRegistry registry_) Ownable(initialOwner) {
-        factory = factory_;
+    constructor(address initialOwner, PushBricksRegistry registry_) Ownable(initialOwner) {
         registry = registry_;
     }
 
     function _origin() internal view returns (UniversalAccountId memory account, bool isUEA) {
-        (account, isUEA) = factory.getOriginForUEA(msg.sender);
+        (account, isUEA) = IUEAFactory(0x00000000000000000000000000000000000000eA).getOriginForUEA(msg.sender);
     }
 
     function _chainKey(string memory ns, string memory id) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(ns, id));
+    }
+
+    function _validateChain(UniversalAccountId memory origin, bool isUEA) internal pure {
+        if (!isUEA) {
+            // If it's a native Push Chain EOA (isUEA = false) - valid
+            return;
+        } else {
+            bytes32 chainHash = keccak256(abi.encodePacked(origin.chainNamespace, origin.chainId));
+
+            if (chainHash == keccak256(abi.encodePacked("solana","EtWTRABZaYq6iMfeYKouRu166VU2xqa1"))) {
+                // Valid Solana chain
+                return;
+            } else if (chainHash == keccak256(abi.encodePacked("eip155","11155111"))) {
+                // Valid Ethereum Sepolia chain
+                return;
+            } else {
+                revert("Invalid chain");
+            }
+        }
     }
 
     function _ensureActive(uint256 tokenId) internal view {
@@ -66,7 +83,8 @@ contract PushBricksMarket is Ownable, ReentrancyGuard {
 
     function buy(uint256 tokenId) external payable nonReentrant {
         _ensureActive(tokenId);
-        (UniversalAccountId memory origin, ) = _origin();
+        (UniversalAccountId memory origin, bool isUEA) = _origin();
+        _validateChain(origin, isUEA);
         bytes32 key = _chainKey(origin.chainNamespace, origin.chainId);
         uint256 newCount = ++buyCountByChain[tokenId][key];
         ++totalBuyCount[tokenId];
@@ -77,7 +95,8 @@ contract PushBricksMarket is Ownable, ReentrancyGuard {
 
     function rent(uint256 tokenId) external payable nonReentrant {
         _ensureActive(tokenId);
-        (UniversalAccountId memory origin, ) = _origin();
+        (UniversalAccountId memory origin, bool isUEA) = _origin();
+        _validateChain(origin, isUEA);
         bytes32 key = _chainKey(origin.chainNamespace, origin.chainId);
         uint256 newCount = ++rentCountByChain[tokenId][key];
         ++totalRentCount[tokenId];
@@ -88,7 +107,8 @@ contract PushBricksMarket is Ownable, ReentrancyGuard {
 
     function lease(uint256 tokenId) external payable nonReentrant {
         _ensureActive(tokenId);
-        (UniversalAccountId memory origin, ) = _origin();
+        (UniversalAccountId memory origin, bool isUEA) = _origin();
+        _validateChain(origin, isUEA);
         bytes32 key = _chainKey(origin.chainNamespace, origin.chainId);
         uint256 newCount = ++leaseCountByChain[tokenId][key];
         ++totalLeaseCount[tokenId];
