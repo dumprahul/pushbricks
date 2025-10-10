@@ -4,10 +4,37 @@ import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
 import logo from "../../public/logo.svg"
+import {
+  PushUniversalAccountButton,
+} from '@pushchain/ui-kit';
 
 export default function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Custom loading component matching brutalist design
+  const CustomLoader = () => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div
+        style={{
+          width: '16px',
+          height: '16px',
+          borderRadius: '50%',
+          border: '3px solid rgba(0, 0, 0, 0.1)',
+          borderTopColor: '#f59e0b',
+          animation: 'spin 1s linear infinite',
+        }}
+      />
+      <style>{`
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
+      <span style={{ fontSize: '12px', fontWeight: '900' }}>Loading...</span>
+    </div>
+  );
+  
   return (
     <header className="relative top-0 z-50 rounded-none border-b-2 border-border bg-white shadow-[6px_6px_0_var(--color-primary)]">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
@@ -33,13 +60,14 @@ export default function SiteHeader() {
           <Link href="/list" className="transition-colors hover:text-[var(--color-secondary)]">
             List Property
           </Link>
-          <Link 
-            href="" 
-            className="rounded-none border-2 border-border bg-[var(--color-accent)] px-3 py-1.5 text-xs font-black uppercase transition-all hover:translate-y-[1px] hover:shadow-[2px_2px_0_var(--color-border)] shadow-[3px_3px_0_var(--color-border)]"
-          >
-            Connect wallet
-          </Link>
+          <div className="[&>button]:rounded-none [&>button]:border-2 [&>button]:border-border [&>button]:bg-[var(--color-accent)] [&>button]:px-3 [&>button]:py-1.5 [&>button]:text-xs [&>button]:font-black [&>button]:uppercase [&>button]:transition-all [&>button]:hover:translate-y-[1px] [&>button]:hover:shadow-[2px_2px_0_var(--color-border)] [&>button]:shadow-[3px_3px_0_var(--color-border)]">
+            <PushUniversalAccountButton 
+              uid='pushbricks-wallet'
+              loadingComponent={<CustomLoader />}
+            />
+          </div>
         </div>
+      
 
         {/* Mobile Menu Button */}
         <button
@@ -84,26 +112,21 @@ export default function SiteHeader() {
               My NFTs
             </Link>
             <Link 
-              href="/mint-property" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="rounded-none border-2 border-border bg-white px-4 py-3 text-sm font-bold transition-colors hover:bg-[var(--color-secondary)] hover:text-white"
-            >
-              Mint Property
-            </Link>
-            <Link 
               href="/list" 
               onClick={() => setMobileMenuOpen(false)}
               className="rounded-none border-2 border-border bg-white px-4 py-3 text-sm font-bold transition-colors hover:bg-[var(--color-secondary)] hover:text-white"
             >
               List Property
             </Link>
-            <Link 
-              href="" 
+            <div 
               onClick={() => setMobileMenuOpen(false)}
-              className="rounded-none border-2 border-border bg-[var(--color-accent)] px-4 py-3 text-sm font-black uppercase shadow-[4px_4px_0_var(--color-border)] transition-all active:translate-y-[2px] active:shadow-[2px_2px_0_var(--color-border)]"
+              className="[&>button]:w-full [&>button]:rounded-none [&>button]:border-2 [&>button]:border-border [&>button]:bg-[var(--color-accent)] [&>button]:px-4 [&>button]:py-3 [&>button]:text-sm [&>button]:font-black [&>button]:uppercase [&>button]:shadow-[4px_4px_0_var(--color-border)] [&>button]:transition-all [&>button]:active:translate-y-[2px] [&>button]:active:shadow-[2px_2px_0_var(--color-border)]"
             >
-              Connect wallet
-            </Link>
+              <PushUniversalAccountButton 
+                uid='pushbricks-wallet'
+                loadingComponent={<CustomLoader />}
+              />
+            </div>
           </div>
         </div>
       )}
