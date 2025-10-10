@@ -1,280 +1,391 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
 import Footer from "@/components/footer";
 import SiteHeader from "@/components/header";
+import Link from "next/link";
 
-type PropertyType = "buy" | "lease";
+interface ChainPricing {
+  chainId: string;
+  price: string;
+  currency: string;
+  decimals: string;
+}
+
+interface PropertyMetadata {
+  name: string;
+  address: string;
+  description: string;
+  propertyType: string;
+  squareFeet: string;
+  imageUrl: string;
+}
+
+interface CreateListingData {
+  ownerAddress: string;
+  metadata: PropertyMetadata;
+  pricingChains: ChainPricing[];
+}
 
 export default function ListPropertyPage() {
-  const [propertyType, setPropertyType] = useState<PropertyType>("buy");
-  const [formData, setFormData] = useState({
-    name: "",
-    location: "",
-    price: "",
-    description: "",
-    sqft: "",
-    apy: "",
-  });
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+  // Create Listing State
+  const [createData, setCreateData] = useState<CreateListingData>({
+    ownerAddress: "",
+    metadata: {
+      name: "",
+      address: "",
+      description: "",
+      propertyType: "residential",
+      squareFeet: "",
+      imageUrl: "",
+    },
+    pricingChains: [{ chainId: "", price: "", currency: "", decimals: "18" }],
+  });
+
+  const inputClasses = "w-full rounded-none border-2 border-border bg-white px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2";
+  const labelClasses = "block text-sm font-bold mb-2 uppercase tracking-wide";
+
+  // Handle metadata changes
+  const handleMetadataChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setCreateData((prev) => ({
+      ...prev,
+      metadata: { ...prev.metadata, [name]: value },
+    }));
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  // Handle owner address change
+  const handleOwnerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCreateData((prev) => ({ ...prev, ownerAddress: e.target.value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleCreatePricingChange = (index: number, field: keyof ChainPricing, value: string) => {
+    const newPricing = [...createData.pricingChains];
+    newPricing[index][field] = value;
+    setCreateData((prev) => ({ ...prev, pricingChains: newPricing }));
+  };
+
+  const addCreatePricingChain = () => {
+    setCreateData((prev) => ({
+      ...prev,
+      pricingChains: [...prev.pricingChains, { chainId: "", price: "", currency: "", decimals: "18" }],
+    }));
+  };
+
+  const removeCreatePricingChain = (index: number) => {
+    setCreateData((prev) => ({
+      ...prev,
+      pricingChains: prev.pricingChains.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send the data to your backend
+    setIsLoading(true);
+    
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    
+    setIsLoading(false);
     setShowSuccess(true);
     setTimeout(() => {
       setShowSuccess(false);
-    }, 3000);
+      // Redirect to My NFTs page
+      window.location.href = "/my-nfts";
+    }, 2000);
   };
 
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto max-w-5xl px-4 py-10 md:py-14">
+      <main className="mx-auto max-w-6xl px-4 py-10 md:py-14">
         {/* Page Header */}
         <section className="mb-10">
           <div className="inline-block mb-4 rounded-none border-2 border-border bg-[var(--color-accent)] px-3 py-1 text-xs font-black uppercase tracking-wider">
-            Tokenize Your Property
+            Create Property Listing
           </div>
           <h1 className="text-4xl font-extrabold leading-tight md:text-5xl">
-            List Your Property
+            Mint & List Your Property
           </h1>
           <p className="mt-3 max-w-2xl text-lg leading-relaxed opacity-90">
-            Transform your real estate into tokenized assets on Push Chain.
+            Tokenize and list your real estate property with multi-chain pricing on Push Chain.
           </p>
         </section>
 
         {/* Success Message */}
         {showSuccess && (
-          <div className="mb-6 rounded-none border-2 border-border bg-[var(--color-secondary)] p-4 shadow-[6px_6px_0_var(--color-border)]">
-            <p className="text-sm font-bold text-white">
-              ✓ Property listed successfully! Redirecting to marketplace...
-            </p>
+          <div className="mb-6 rounded-none border-2 border-border bg-[var(--color-accent)]/20 p-6 shadow-[4px_4px_0_var(--color-accent)]">
+            <div className="flex items-start gap-4">
+              <div className="rounded-none border-2 border-border bg-[var(--color-accent)] p-2">
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2.5"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-extrabold mb-1">Success!</h3>
+                <p className="text-sm leading-relaxed opacity-90">Property minted and listed successfully! Redirecting to My NFTs...</p>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Form Modal/Card */}
-        <section className="rounded-none border-2 border-border bg-white p-6 shadow-[8px_8px_0_var(--color-primary)] md:p-10">
-          <form onSubmit={handleSubmit}>
-            {/* Property Type Selection */}
-            <div className="mb-8">
-              <label className="mb-3 block text-sm font-bold uppercase tracking-wide">
-                Listing Type
-              </label>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPropertyType("buy")}
-                  className={`flex-1 rounded-none border-2 border-border px-6 py-3 text-sm font-bold uppercase transition-all ${
-                    propertyType === "buy"
-                      ? "bg-[var(--color-primary)] text-white shadow-[4px_4px_0_var(--color-border)]"
-                      : "bg-white text-foreground hover:bg-[var(--color-secondary)] hover:text-white"
-                  }`}
-                >
-                  For Sale
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPropertyType("lease")}
-                  className={`flex-1 rounded-none border-2 border-border px-6 py-3 text-sm font-bold uppercase transition-all ${
-                    propertyType === "lease"
-                      ? "bg-[var(--color-primary)] text-white shadow-[4px_4px_0_var(--color-border)]"
-                      : "bg-white text-foreground hover:bg-[var(--color-secondary)] hover:text-white"
-                  }`}
-                >
-                  For Lease
-                </button>
-              </div>
-            </div>
-
-            {/* Image Upload */}
-            <div className="mb-8">
-              <label className="mb-3 block text-sm font-bold uppercase tracking-wide">
-                Property Image
-              </label>
-              <div className="rounded-none border-2 border-border bg-[var(--color-accent)]/10 p-6">
-                {imagePreview ? (
-                  <div className="relative">
-                    <Image
-                      src={imagePreview}
-                      alt="Property preview"
-                      width={600}
-                      height={400}
-                      className="h-64 w-full rounded-none border-2 border-border object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setImagePreview(null)}
-                      className="mt-3 rounded-none border-2 border-border bg-white px-4 py-2 text-sm font-bold transition-colors hover:bg-red-500 hover:text-white"
-                    >
-                      Remove Image
-                    </button>
-                  </div>
-                ) : (
-                  <label className="flex cursor-pointer flex-col items-center justify-center py-8">
-                    <svg
-                      className="mb-3 h-12 w-12 opacity-50"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span className="text-sm font-bold uppercase tracking-wide opacity-70">
-                      Click to Upload Image
-                    </span>
+        {/* Create Listing Form */}
+        <section className="rounded-none border-2 border-border bg-white p-8 shadow-[6px_6px_0_var(--color-primary)] md:p-12">
+          <form onSubmit={handleCreateSubmit}>
+            <div className="space-y-8">
+              {/* Owner Information Section */}
+              <div>
+                <h3 className="text-lg font-extrabold mb-2 text-[var(--color-secondary)]">
+                  Owner Information
+                </h3>
+                <div className="space-y-6">
+                  {/* Owner Address */}
+                  <div>
+                    <label htmlFor="ownerAddress" className={labelClasses}>
+                      Owner Address (to) *
+                    </label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
+                      type="text"
+                      id="ownerAddress"
+                      name="ownerAddress"
+                      required
+                      value={createData.ownerAddress}
+                      onChange={handleOwnerChange}
+                      placeholder="0x..."
+                      pattern="^0x[a-fA-F0-9]{40}$"
+                      title="Must be a valid Ethereum address (0x followed by 40 hexadecimal characters)"
+                      className={inputClasses}
                     />
-                  </label>
-                )}
-              </div>
-            </div>
-
-            {/* Property Details Grid */}
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Property Name */}
-              <div>
-                <label htmlFor="name" className="mb-2 block text-sm font-bold uppercase tracking-wide">
-                  Property Name
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Sunset Villa #42"
-                  required
-                  className="w-full rounded-none border-2 border-border bg-white px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                />
-              </div>
-
-              {/* Location */}
-              <div>
-                <label htmlFor="location" className="mb-2 block text-sm font-bold uppercase tracking-wide">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  id="location"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Miami Beach, FL"
-                  required
-                  className="w-full rounded-none border-2 border-border bg-white px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                />
-              </div>
-
-              {/* Price */}
-              <div>
-                <label htmlFor="price" className="mb-2 block text-sm font-bold uppercase tracking-wide">
-                  Price {propertyType === "lease" && "(per month)"}
-                </label>
-                <input
-                  type="text"
-                  id="price"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  placeholder={propertyType === "buy" ? "e.g., 2.5 ETH" : "e.g., 0.15 ETH/mo"}
-                  required
-                  className="w-full rounded-none border-2 border-border bg-white px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                />
-              </div>
-
-              {/* APY (only for lease) */}
-              {propertyType === "lease" && (
-                <div>
-                  <label htmlFor="apy" className="mb-2 block text-sm font-bold uppercase tracking-wide">
-                    Expected APY (%)
-                  </label>
-                  <input
-                    type="text"
-                    id="apy"
-                    name="apy"
-                    value={formData.apy}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 8.5"
-                    className="w-full rounded-none border-2 border-border bg-white px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  />
+                    <p className="mt-1 text-xs opacity-70">Should match the current owner or authorized account</p>
+                  </div>
                 </div>
-              )}
+              </div>
 
-              {/* Square Feet */}
+              {/* Property Metadata Section */}
               <div>
-                <label htmlFor="sqft" className="mb-2 block text-sm font-bold uppercase tracking-wide">
-                  Square Feet
-                </label>
-                <input
-                  type="number"
-                  id="sqft"
-                  name="sqft"
-                  value={formData.sqft}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 2500"
-                  required
-                  className="w-full rounded-none border-2 border-border bg-white px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                />
+                <h3 className="text-lg font-extrabold mb-2 text-[var(--color-secondary)]">
+                  Property Metadata
+                </h3>
+                <div className="grid gap-6 md:grid-cols-2">
+                  {/* Property Name */}
+                  <div>
+                    <label htmlFor="name" className={labelClasses}>
+                      Property Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      required
+                      value={createData.metadata.name}
+                      onChange={handleMetadataChange}
+                      placeholder="e.g., Sunset Villa"
+                      className={inputClasses}
+                    />
+                  </div>
+
+                  {/* Property Type */}
+                  <div>
+                    <label htmlFor="propertyType" className={labelClasses}>
+                      Property Type *
+                    </label>
+                    <select
+                      id="propertyType"
+                      name="propertyType"
+                      required
+                      value={createData.metadata.propertyType}
+                      onChange={handleMetadataChange}
+                      className={inputClasses}
+                    >
+                      <option value="residential">Residential</option>
+                      <option value="commercial">Commercial</option>
+                      <option value="industrial">Industrial</option>
+                      <option value="land">Land</option>
+                    </select>
+                  </div>
+
+                  {/* Property Address */}
+                  <div className="md:col-span-2">
+                    <label htmlFor="address" className={labelClasses}>
+                      Property Address *
+                    </label>
+                    <input
+                      type="text"
+                      id="address"
+                      name="address"
+                      required
+                      value={createData.metadata.address}
+                      onChange={handleMetadataChange}
+                      placeholder="123 Main Street, City, State, ZIP"
+                      className={inputClasses}
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div className="md:col-span-2">
+                    <label htmlFor="description" className={labelClasses}>
+                      Description *
+                    </label>
+                    <textarea
+                      id="description"
+                      name="description"
+                      required
+                      value={createData.metadata.description}
+                      onChange={handleMetadataChange}
+                      placeholder="Describe the property..."
+                      rows={4}
+                      className={inputClasses}
+                    />
+                  </div>
+
+               
+
+                  {/* Square Feet */}
+                  <div>
+                    <label htmlFor="squareFeet" className={labelClasses}>
+                      Square Feet
+                    </label>
+                    <input
+                      type="text"
+                      id="squareFeet"
+                      name="squareFeet"
+                      value={createData.metadata.squareFeet}
+                      onChange={handleMetadataChange}
+                      placeholder="2500"
+                      className={inputClasses}
+                    />
+                  </div>
+
+
+                  {/* Image URL */}
+                  <div>
+                    <label htmlFor="imageUrl" className={labelClasses}>
+                      Image URL
+                    </label>
+                    <input
+                      type="url"
+                      id="imageUrl"
+                      name="imageUrl"
+                      value={createData.metadata.imageUrl}
+                      onChange={handleMetadataChange}
+                      placeholder="https://example.com/image.jpg"
+                      className={inputClasses}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Pricing Structure Section */}
+              <div>
+                <h3 className="text-lg font-extrabold mb-2 text-[var(--color-secondary)]">
+                  Multi-Chain Pricing
+                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <label className={labelClasses + " mb-0"}>
+                    Pricing Structure (ListingPricing) *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addCreatePricingChain}
+                    className="rounded-none border-2 border-border bg-[var(--color-accent)] px-3 py-1 text-xs font-black uppercase shadow-[3px_3px_0_var(--color-border)] transition-all active:translate-y-[1px] active:shadow-[2px_2px_0_var(--color-border)]"
+                  >
+                    + Add Chain
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  {createData.pricingChains.map((chain, index) => (
+                    <div
+                      key={index}
+                      className="rounded-none border-2 border-border bg-[var(--color-secondary)]/5 p-4"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-black uppercase">Chain {index + 1}</span>
+                        {createData.pricingChains.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeCreatePricingChain(index)}
+                            className="text-xs font-bold text-red-600 hover:text-red-800"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <label className="block text-xs font-bold mb-1">Chain ID *</label>
+                          <input
+                            type="text"
+                            required
+                            value={chain.chainId}
+                            onChange={(e) => handleCreatePricingChange(index, "chainId", e.target.value)}
+                            placeholder="e.g., 1 (Ethereum Mainnet)"
+                            className={inputClasses}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold mb-1">Price *</label>
+                          <input
+                            type="text"
+                            required
+                            value={chain.price}
+                            onChange={(e) => handleCreatePricingChange(index, "price", e.target.value)}
+                            placeholder="e.g., 1000000000000000000"
+                            className={inputClasses}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold mb-1">Currency *</label>
+                          <input
+                            type="text"
+                            required
+                            value={chain.currency}
+                            onChange={(e) => handleCreatePricingChange(index, "currency", e.target.value)}
+                            placeholder="e.g., ETH or token address"
+                            className={inputClasses}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold mb-1">Decimals *</label>
+                          <input
+                            type="text"
+                            required
+                            value={chain.decimals}
+                            onChange={(e) => handleCreatePricingChange(index, "decimals", e.target.value)}
+                            placeholder="e.g., 18"
+                            className={inputClasses}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Description */}
-            <div className="mt-6">
-              <label htmlFor="description" className="mb-2 block text-sm font-bold uppercase tracking-wide">
-                Description
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Describe your property..."
-                rows={4}
-                required
-                className="w-full rounded-none border-2 border-border bg-white px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            {/* Submit Button */}
+            <div className="mt-8 flex gap-4">
               <button
                 type="submit"
-                className="flex-1 rounded-none border-2 border-border bg-[var(--color-accent)] px-6 py-3 text-sm font-black uppercase shadow-[4px_4px_0_var(--color-primary)] transition-all active:translate-y-[2px] active:shadow-[2px_2px_0_var(--color-primary)] hover:translate-y-[1px] hover:shadow-[2px_2px_0_var(--color-primary)]"
+                disabled={isLoading}
+                className="inline-flex items-center justify-center rounded-none border-2 border-border bg-[var(--color-primary)] px-8 py-3 text-sm font-bold text-white shadow-[4px_4px_0_var(--color-border)] transition-all active:translate-y-[2px] active:shadow-[2px_2px_0_var(--color-border)] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--color-border)] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                List Property
+                {isLoading ? "Creating..." : "Mint & List Property"}
               </button>
               <Link
-                href="/marketplace"
-                className="flex-1 inline-flex items-center justify-center rounded-none border-2 border-border bg-white px-6 py-3 text-sm font-bold uppercase transition-colors hover:bg-[var(--color-secondary)] hover:text-white"
+                href="/"
+                className="inline-flex items-center justify-center rounded-none border-2 border-border bg-white px-6 py-3 text-sm font-bold text-foreground transition-colors hover:bg-[var(--color-secondary)] hover:text-white"
               >
                 Cancel
               </Link>
@@ -282,42 +393,8 @@ export default function ListPropertyPage() {
           </form>
         </section>
 
-        {/* Info Cards */}
-        <section className="mt-12 grid gap-6 md:grid-cols-3">
-          <div className="rounded-none border-2 border-border bg-white p-5 shadow-[4px_4px_0_var(--color-primary)]">
-            <div className="mb-2 inline-block rounded-none border-2 border-border bg-[var(--color-primary)] px-2 py-1 text-xs font-black text-white">
-              STEP 1
-            </div>
-            <h3 className="mt-3 text-base font-extrabold">Property Details</h3>
-            <p className="mt-2 text-sm leading-relaxed opacity-70">
-              Fill in basic information about your property
-            </p>
-          </div>
-
-          <div className="rounded-none border-2 border-border bg-white p-5 shadow-[4px_4px_0_var(--color-primary)]">
-            <div className="mb-2 inline-block rounded-none border-2 border-border bg-[var(--color-secondary)] px-2 py-1 text-xs font-black text-white">
-              STEP 2
-            </div>
-            <h3 className="mt-3 text-base font-extrabold">Tokenization</h3>
-            <p className="mt-2 text-sm leading-relaxed opacity-70">
-              We&apos;ll mint your property as an NFT on Push Chain
-            </p>
-          </div>
-
-          <div className="rounded-none border-2 border-border bg-white p-5 shadow-[4px_4px_0_var(--color-primary)]">
-            <div className="mb-2 inline-block rounded-none border-2 border-border bg-[var(--color-accent)] px-2 py-1 text-xs font-black">
-              STEP 3
-            </div>
-            <h3 className="mt-3 text-base font-extrabold">Go Live</h3>
-            <p className="mt-2 text-sm leading-relaxed opacity-70">
-              Your property appears on the marketplace
-            </p>
-          </div>
-        </section>
-
         <Footer />
       </main>
     </>
   );
 }
-

@@ -84,6 +84,13 @@ export default function SiteHeader() {
               My NFTs
             </Link>
             <Link 
+              href="/mint-property" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="rounded-none border-2 border-border bg-white px-4 py-3 text-sm font-bold transition-colors hover:bg-[var(--color-secondary)] hover:text-white"
+            >
+              Mint Property
+            </Link>
+            <Link 
               href="/list" 
               onClick={() => setMobileMenuOpen(false)}
               className="rounded-none border-2 border-border bg-white px-4 py-3 text-sm font-bold transition-colors hover:bg-[var(--color-secondary)] hover:text-white"

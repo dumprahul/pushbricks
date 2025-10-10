@@ -69,7 +69,7 @@ const nftProperties = [
     name: "Penthouse Suite #5",
     location: "Dubai, UAE",
     price: "12.3 ETH",
-    type: "buy",
+    type: "rent",
     image: img1,
     apy: null,
     yield: null,
@@ -81,7 +81,7 @@ const nftProperties = [
   
 ];
 
-type FilterType = "all" | "buy" | "lease";
+type FilterType = "all" | "buy" | "lease" | "rent";
 
 export default function MarketplacePage() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
@@ -112,7 +112,7 @@ export default function MarketplacePage() {
         {/* Filters */}
         <section className="mb-8">
           <div className="flex flex-wrap gap-3">
-            {(["all", "buy", "lease"] as FilterType[]).map((filter) => (
+            {(["all", "buy", "lease", "rent"] as FilterType[]).map((filter) => (
               <button
                 key={filter}
                 onClick={() => setActiveFilter(filter)}
@@ -189,7 +189,7 @@ export default function MarketplacePage() {
         </section>
 
         {/* Stats Dashboard */}
-        <section className="mt-16">
+        <section id="stats" className="mt-16 scroll-mt-20">
           <h2 className="mb-6 text-2xl font-extrabold">Marketplace Stats</h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-none border-2 border-border bg-white p-6 shadow-[6px_6px_0_var(--color-primary)]">
