@@ -19,19 +19,13 @@ const walletConfig = {
     wallet: {
       enabled: true,
     },
-    appPreview: true,
+    appPreview: false,
   },
   modal: {
-    loginLayout: PushUI.CONSTANTS.LOGIN.LAYOUT.SPLIT,
+    loginLayout: PushUI.CONSTANTS.LOGIN.LAYOUT.SIMPLE,
     connectedLayout: PushUI.CONSTANTS.CONNECTED.LAYOUT.HOVER,
-    appPreview: true,
+    appPreview: false,
   },
-};
-
-const appMetadata = {
-  logoUrl: 'https://imgs.search.brave.com/vCgGf_GUzoftox-myJ37vgid25WVYX12g0AFBGkwup8/rs:fit:0:180:1:0/g:ce/aHR0cHM6Ly9wdXNo/Lm9yZy9hc3NldHMv/d2Vic2l0ZS9kb2Nz/aHViL1B1c2hMb2dv/QmxhY2tAM3gucG5n', // Using your Push Bricks logo
-  title: 'Push Bricks',
-  description: 'Tokenize. Lease. Borrow.',
 };
 
 
@@ -43,7 +37,6 @@ export default function RootLayout({
   return (
     <PushUniversalWalletProvider 
       config={walletConfig}
-      app={appMetadata}
       themeOverrides={{
         '--pw-core-bg-primary-color': '#FFFFFF33',
       }}
