@@ -12,6 +12,9 @@ contract PropertyNFT is ERC721, Ownable {
     // Next token id counter
     uint256 private nextTokenId;
 
+    // Total supply counter
+    uint256 public totalSupply;
+
     event PropertyMinted(uint256 indexed tokenId, address indexed to, string uri);
     event PropertyURIUpdated(uint256 indexed tokenId, string uri);
 
@@ -21,6 +24,7 @@ contract PropertyNFT is ERC721, Ownable {
         tokenId = ++nextTokenId;
         _safeMint(to, tokenId);
         tokenIdToURI[tokenId] = uri;
+        totalSupply++;
         emit PropertyMinted(tokenId, to, uri);
     }
 

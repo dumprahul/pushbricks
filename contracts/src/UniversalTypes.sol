@@ -13,20 +13,10 @@ interface IUEAFactory {
     function getOriginForUEA(address addr) external view returns (UniversalAccountId memory account, bool isUEA);
 }
 
-// Generic quote for a value on a specific origin chain/token
-// Token is represented as an opaque string to support both EVM and non‑EVM chains
-struct ChainQuote {
-    string chainNamespace; // e.g. "eip155", "solana"
-    string chainId;        // chain identifier string
-    string tokenId;        // token identifier (ERC20 address hex for EVM or ticker/symbol/mint for others)
-    uint256 amount;        // amount in token smallest unit
-}
-
-// Group of pricing quotes for a listing per action mode
-struct ListingPricing {
-    ChainQuote[] buyQuotes;   // acceptable quotes to buy the property
-    ChainQuote[] rentQuotes;  // acceptable quotes per rent period unit
-    ChainQuote[] leaseQuotes; // acceptable quotes per lease term unit
+// Simple pricing structure for property listings
+struct PropertyPricing {
+    uint256 priceInPC;        // Price in Push Chain native token (wei)
+    uint256 priceInStablecoin; // Price in stablecoin (smallest unit)
 }
 
 
