@@ -28,6 +28,40 @@ contract PropertyNFT is ERC721, Ownable {
         emit PropertyMinted(tokenId, to, uri);
     }
 
+    // Allow registry to mint properties for property owners
+    function mintForListing(address to, string calldata uri) external returns (uint256 tokenId) {
+        // Only allow the registry contract to call this function
+        // We'll need to set the registry address after deployment
+        require(msg.sender == owner() || isRegistry[msg.sender], "Only registry can mint for listings");
+        tokenId = ++nextTokenId;
+        _safeMint(to, tokenId);
+        tokenIdToURI[tokenId] = uri;
+        totalSupply++;
+        emit PropertyMinted(tokenId, to, uri);
+    }
+
+    // Mapping to track authorized registry contracts
+    mapping(address => bool) public isRegistry;
+
+    // Owner can authorize registry contracts
+    function setRegistry(address registry, bool authorized) external onlyOwner {
+        isRegistry[registry] = authorized;
+    }
+
+    // Owner can authorize market contracts
+    mapping(address => bool) public isMarket;
+
+    // Owner can authorize market contracts to transfer NFTs
+    function setMarket(address market, bool authorized) external onlyOwner {
+        isMarket[market] = authorized;
+    }
+
+    // Allow market to transfer NFTs for property sales
+    function transferForSale(address from, address to, uint256 tokenId) external {
+        require(isMarket[msg.sender], "Only authorized market can transfer for sales");
+        _safeTransfer(from, to, tokenId, "");
+    }
+
     function setTokenURI(uint256 tokenId, string calldata uri) external onlyOwner {
         require(_ownerOf(tokenId) != address(0), "Nonexistent token");
         tokenIdToURI[tokenId] = uri;

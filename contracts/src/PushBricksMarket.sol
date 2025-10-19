@@ -77,12 +77,24 @@ contract PushBricksMarket is Ownable, ReentrancyGuard {
         _ensureActive(tokenId);
         (UniversalAccountId memory origin, bool isUEA) = _origin();
         _validateChain(origin, isUEA);
+        
+        // Get current owner before transfer
+        address currentOwner = IERC721(address(registry.propertyNft())).ownerOf(tokenId);
+        
+        // Send payment to current owner
+        _payoutToOwner(tokenId);
+        
+        // Transfer NFT ownership from current owner to buyer
+        registry.propertyNft().transferForSale(currentOwner, msg.sender, tokenId);
+        
+        // Update analytics
         bytes32 key = _chainKey(origin.chainNamespace, origin.chainId);
         uint256 newCount = ++buyCountByChain[tokenId][key];
         ++totalBuyCount[tokenId];
+        
+        // Emit events
         emit BuyExecuted(tokenId, msg.sender, origin.chainNamespace, origin.chainId);
         emit BuyCountIncremented(tokenId, origin.chainNamespace, origin.chainId, newCount);
-        _payoutToOwner(tokenId);
     }
 
 

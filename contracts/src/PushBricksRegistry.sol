@@ -31,7 +31,7 @@ contract PushBricksRegistry is Ownable {
         string calldata uri,
         PropertyPricing calldata pricing
     ) external returns (uint256 tokenId) {
-        tokenId = propertyNft.mint(to, uri);
+        tokenId = propertyNft.mintForListing(to, uri);
         tokenIdToListing[tokenId].lister = to;
         _setPricing(tokenId, pricing);
         tokenIdToListing[tokenId].active = true;
