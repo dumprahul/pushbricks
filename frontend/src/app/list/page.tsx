@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -7,12 +8,19 @@ import Link from "next/link";
 import { 
   uploadCompletePropertyToIPFS
 } from "@/lib/pinata";
+import { createContractService, convertPricingToContractFormat } from "@/services/contractService";
+import { usePushChain, useWalletConnection } from "@/contexts/PushChainContext";
 
 interface ChainPricing {
   chainId: string;
-  price: string;
-  currency: string;
-  decimals: string;
+  // Native token pricing (priceInPC)
+  nativePrice: string;
+  nativeCurrency: string;
+  nativeDecimals: string;
+  // Stablecoin pricing (priceInStablecoin)
+  stablecoinPrice: string;
+  stablecoinCurrency: string;
+  stablecoinDecimals: string;
 }
 
 interface PropertyMetadata {
@@ -32,11 +40,16 @@ interface CreateListingData {
 }
 
 export default function ListPropertyPage() {
+  const { isInitialized, error: pushChainError } = usePushChain();
+  const { isConnected, walletAddress } = useWalletConnection();
+  
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string>("");
   const [metadataIPFSHash, setMetadataIPFSHash] = useState<string>("");
+  const [contractError, setContractError] = useState<string>("");
+  const [transactionHash, setTransactionHash] = useState<string>("");
 
   // Create Listing State
   const [createData, setCreateData] = useState<CreateListingData>({
@@ -50,11 +63,20 @@ export default function ListPropertyPage() {
       yearBuilt: "",
       imageData: "",
     },
-    pricingChains: [{ chainId: "", price: "", currency: "", decimals: "18" }],
+    pricingChains: [{ 
+      chainId: "42101", // Push Chain testnet
+      nativePrice: "", 
+      nativeCurrency: "PC", // Push Chain token
+      nativeDecimals: "18",
+      stablecoinPrice: "",
+      stablecoinCurrency: "USDC",
+      stablecoinDecimals: "6"
+    }],
   });
 
   const inputClasses = "w-full rounded-none border-2 border-border bg-white px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2";
   const labelClasses = "block text-sm font-bold mb-2 uppercase tracking-wide";
+
 
   // Handle metadata changes
   const handleMetadataChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -111,7 +133,15 @@ export default function ListPropertyPage() {
   const addCreatePricingChain = () => {
     setCreateData((prev) => ({
       ...prev,
-      pricingChains: [...prev.pricingChains, { chainId: "", price: "", currency: "", decimals: "18" }],
+      pricingChains: [...prev.pricingChains, { 
+        chainId: "42101", // Push Chain testnet
+        nativePrice: "", 
+        nativeCurrency: "PC", // Push Chain token
+        nativeDecimals: "18",
+        stablecoinPrice: "",
+        stablecoinCurrency: "USDC",
+        stablecoinDecimals: "6"
+      }],
     }));
   };
 
@@ -126,8 +156,14 @@ export default function ListPropertyPage() {
     e.preventDefault();
     setIsLoading(true);
     setUploadStatus("Preparing to upload...");
+    setContractError("");
+    setTransactionHash("");
     
     try {
+      // Check if wallet is available
+      if (!(window as any).ethereum) {
+        throw new Error("No wallet found. Please install MetaMask or another wallet.");
+      }
       // Step 1: Upload image to IPFS
       setUploadStatus("Uploading image to IPFS...");
       
@@ -150,17 +186,48 @@ export default function ListPropertyPage() {
       );
       
       setMetadataIPFSHash(metadataCID);
-      setUploadStatus("Upload complete! Creating listing...");
+      setUploadStatus("Upload complete! Creating listing on blockchain...");
       
       console.log("🎉 Property uploaded to IPFS!");
       console.log("Metadata URI for smart contract:", metadataURI);
       console.log("Image CID:", imageCID);
       
-      // TODO: Use metadataURI for your smart contract call
-      // Example: await mintPropertyNFT(createData.ownerAddress, metadataURI);
+      // Step 3: Create listing on blockchain using PushBricksRegistry contract
+      setUploadStatus("Connecting to Push Chain...");
       
-      // Simulate blockchain transaction
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Check if wallet is connected and Push Chain is initialized
+      if (!isConnected || !walletAddress) {
+        throw new Error("Please connect your wallet first");
+      }
+      
+      if (!isInitialized) {
+        throw new Error("Push Chain client not initialized. Please try again.");
+      }
+      
+      // Initialize contract service
+      const contractService = await createContractService();
+      
+      setUploadStatus("Validating contract configuration...");
+      
+      setUploadStatus("Preparing contract transaction...");
+      
+      // Convert pricing to contract format
+      const pricing = convertPricingToContractFormat(createData.pricingChains);
+      
+      setUploadStatus("Creating listing on Push Chain...");
+      
+      // Create listing
+      const tokenId = await contractService.createListing({
+        to: createData.ownerAddress,
+        uri: metadataURI,
+        pricing: pricing,
+      });
+      
+      setUploadStatus("Listing created successfully!");
+      setTransactionHash(`Token ID: ${tokenId.toString()}`);
+      
+      console.log("🎉 Property listing created on blockchain!");
+      console.log("Token ID:", tokenId.toString());
       
       setIsLoading(false);
       setShowSuccess(true);
@@ -170,10 +237,33 @@ export default function ListPropertyPage() {
       }, 3000);
       
     } catch (error) {
-      console.error("Error uploading to IPFS:", error);
+      console.error("Error creating listing:", error);
+      setContractError((error as Error).message);
       setUploadStatus("Error: " + (error as Error).message);
       setIsLoading(false);
-      alert("Failed to upload to IPFS. Please check your Pinata configuration and try again.");
+      
+      // Show specific error message based on error type
+      const errorMessage = (error as Error).message.toLowerCase();
+      
+      if (errorMessage.includes("user rejected") || errorMessage.includes("user denied")) {
+        alert("Transaction was cancelled by user. Please try again.");
+      } else if (errorMessage.includes("insufficient funds")) {
+        alert("Insufficient funds for transaction. Please add more funds to your wallet.");
+      } else if (errorMessage.includes("invalid") && errorMessage.includes("address")) {
+        alert("Invalid contract address. Please check the contract configuration.");
+      } else if (errorMessage.includes("contract address is not configured")) {
+        alert("Contract address is not configured. Please contact support.");
+      } else if (errorMessage.includes("abi is not loaded")) {
+        alert("Contract ABI is not loaded. Please contact support.");
+      } else if (errorMessage.includes("gas estimation failed") || errorMessage.includes("gas")) {
+        alert("Gas estimation failed. This might be due to insufficient funds or network issues. Please ensure you have enough PC tokens and try again.");
+      } else if (errorMessage.includes("wallet") || errorMessage.includes("connection")) {
+        alert("Wallet connection issue. Please ensure your wallet is connected and try again.");
+      } else if (errorMessage.includes("network")) {
+        alert("Network error. Please check your internet connection and try again.");
+      } else {
+        alert(`Failed to create listing: ${(error as Error).message}`);
+      }
     }
   };
 
@@ -193,6 +283,66 @@ export default function ListPropertyPage() {
             Tokenize and list your real estate property with multi-chain pricing on Push Chain.
           </p>
         </section>
+
+        {/* Wallet Connection Status */}
+        {!isConnected && (
+          <section className="mb-8">
+            <div className="rounded-none border-2 border-border bg-red-100 p-6 shadow-[4px_4px_0_red-500]">
+              <div className="flex items-start gap-4">
+                <div className="rounded-none border-2 border-border bg-red-500 p-2">
+                  <svg className="h-6 w-6 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24" stroke="currentColor">
+                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-extrabold mb-1 text-red-700">Wallet Not Connected</h3>
+                  <p className="text-sm leading-relaxed text-red-600">
+                    Please connect your wallet to create property listings. Make sure you&apos;re connected to Push Chain network.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {isConnected && !isInitialized && (
+          <section className="mb-8">
+            <div className="rounded-none border-2 border-border bg-yellow-100 p-6 shadow-[4px_4px_0_yellow-500]">
+              <div className="flex items-start gap-4">
+                <div className="rounded-none border-2 border-border bg-yellow-500 p-2">
+                  <svg className="h-6 w-6 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-extrabold mb-1 text-yellow-700">Initializing Push Chain...</h3>
+                  <p className="text-sm leading-relaxed text-yellow-600">
+                    Setting up Push Chain client. This may take a moment.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {pushChainError && (
+          <section className="mb-8">
+            <div className="rounded-none border-2 border-border bg-red-100 p-6 shadow-[4px_4px_0_red-500]">
+              <div className="flex items-start gap-4">
+                <div className="rounded-none border-2 border-border bg-red-500 p-2">
+                  <svg className="h-6 w-6 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24" stroke="currentColor">
+                    <path d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-extrabold mb-1 text-red-700">Push Chain Error</h3>
+                  <p className="text-sm leading-relaxed text-red-600">{pushChainError}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Upload Status */}
         {uploadStatus && !showSuccess && (
@@ -246,15 +396,46 @@ export default function ListPropertyPage() {
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-extrabold mb-1">Success!</h3>
-                <p className="text-sm leading-relaxed opacity-90">Property metadata uploaded to IPFS! Redirecting to My NFTs...</p>
+                <p className="text-sm leading-relaxed opacity-90">Property listing created successfully on Push Chain! Redirecting to My NFTs...</p>
                 {metadataIPFSHash && (
                   <div className="mt-3 rounded-none border-2 border-border bg-white p-3">
                     <p className="text-xs font-bold mb-1">IPFS Metadata Hash:</p>
                     <p className="text-xs font-mono break-all">{metadataIPFSHash}</p>
                     <p className="text-xs font-bold mt-2 mb-1">Metadata URI:</p>
                     <p className="text-xs font-mono break-all">ipfs://{metadataIPFSHash}</p>
+                    {transactionHash && (
+                      <>
+                        <p className="text-xs font-bold mt-2 mb-1">Token ID:</p>
+                        <p className="text-xs font-mono break-all">{transactionHash}</p>
+                      </>
+                    )}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Contract Error Message */}
+        {contractError && !showSuccess && (
+          <div className="mb-6 rounded-none border-2 border-border bg-red-500/20 p-6 shadow-[4px_4px_0_red-500]">
+            <div className="flex items-start gap-4">
+              <div className="rounded-none border-2 border-border bg-red-500 p-2">
+                <svg
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2.5"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-extrabold mb-1 text-red-700">Contract Error</h3>
+                <p className="text-sm leading-relaxed text-red-600">{contractError}</p>
               </div>
             </div>
           </div>
@@ -495,50 +676,102 @@ export default function ListPropertyPage() {
                           </button>
                         )}
                       </div>
-                      <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-6">
+                        {/* Chain ID */}
                         <div>
-                          <label className="block text-xs font-bold mb-1">Chain ID *</label>
+                          <label className="block text-xs font-bold mb-1">Chain ID * (Use 42101 for Push Chain)</label>
                           <input
                             type="text"
                             required
                             value={chain.chainId}
                             onChange={(e) => handleCreatePricingChange(index, "chainId", e.target.value)}
-                            placeholder="e.g., 1 (Ethereum Mainnet)"
+                            placeholder="e.g., 42101 (Push Chain Testnet)"
                             className={inputClasses}
                           />
                         </div>
-                        <div>
-                          <label className="block text-xs font-bold mb-1">Price *</label>
-                          <input
-                            type="text"
-                            required
-                            value={chain.price}
-                            onChange={(e) => handleCreatePricingChange(index, "price", e.target.value)}
-                            placeholder="e.g., 1000000000000000000"
-                            className={inputClasses}
-                          />
+
+                        {/* Native Token Pricing Section */}
+                        <div className="rounded-none border-2 border-border bg-blue-50/50 p-4">
+                          <h4 className="text-sm font-bold mb-3 text-blue-800">Native Token Pricing (priceInPC)</h4>
+                          <div className="grid gap-4 md:grid-cols-3">
+                            <div>
+                              <label className="block text-xs font-bold mb-1">Price (Native Token) *</label>
+                              <input
+                                type="text"
+                                required
+                                value={chain.nativePrice}
+                                onChange={(e) => handleCreatePricingChange(index, "nativePrice", e.target.value)}
+                                placeholder="e.g., 1000000000000000000"
+                                className={inputClasses}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold mb-1">Currency * (PC for Push Chain)</label>
+                              <select
+                                value={chain.nativeCurrency}
+                                onChange={(e) => handleCreatePricingChange(index, "nativeCurrency", e.target.value)}
+                                className={inputClasses}
+                              >
+                                <option value="ETH">ETH</option>
+                                <option value="PC">Push Chain Token</option>
+                                <option value="MATIC">MATIC (Polygon)</option>
+                                <option value="BNB">BNB (BSC)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold mb-1">Decimals *</label>
+                              <input
+                                type="text"
+                                required
+                                value={chain.nativeDecimals}
+                                onChange={(e) => handleCreatePricingChange(index, "nativeDecimals", e.target.value)}
+                                placeholder="e.g., 18"
+                                className={inputClasses}
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-xs font-bold mb-1">Currency *</label>
-                          <input
-                            type="text"
-                            required
-                            value={chain.currency}
-                            onChange={(e) => handleCreatePricingChange(index, "currency", e.target.value)}
-                            placeholder="e.g., ETH or token address"
-                            className={inputClasses}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold mb-1">Decimals *</label>
-                          <input
-                            type="text"
-                            required
-                            value={chain.decimals}
-                            onChange={(e) => handleCreatePricingChange(index, "decimals", e.target.value)}
-                            placeholder="e.g., 18"
-                            className={inputClasses}
-                          />
+
+                        {/* Stablecoin Pricing Section */}
+                        <div className="rounded-none border-2 border-border bg-green-50/50 p-4">
+                          <h4 className="text-sm font-bold mb-3 text-green-800">Stablecoin Pricing (priceInStablecoin)</h4>
+                          <div className="grid gap-4 md:grid-cols-3">
+                            <div>
+                              <label className="block text-xs font-bold mb-1">Price (Stablecoin) *</label>
+                              <input
+                                type="text"
+                                required
+                                value={chain.stablecoinPrice}
+                                onChange={(e) => handleCreatePricingChange(index, "stablecoinPrice", e.target.value)}
+                                placeholder="e.g., 1000000"
+                                className={inputClasses}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold mb-1">Stablecoin *</label>
+                              <select
+                                value={chain.stablecoinCurrency}
+                                onChange={(e) => handleCreatePricingChange(index, "stablecoinCurrency", e.target.value)}
+                                className={inputClasses}
+                              >
+                                <option value="USDC">USDC</option>
+                                <option value="USDT">USDT</option>
+                                <option value="DAI">DAI</option>
+                                <option value="BUSD">BUSD</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold mb-1">Decimals *</label>
+                              <input
+                                type="text"
+                                required
+                                value={chain.stablecoinDecimals}
+                                onChange={(e) => handleCreatePricingChange(index, "stablecoinDecimals", e.target.value)}
+                                placeholder="e.g., 6"
+                                className={inputClasses}
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>

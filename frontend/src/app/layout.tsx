@@ -7,6 +7,7 @@ import {
   PushUniversalWalletProvider,
   PushUI,
 } from '@pushchain/ui-kit';
+import { PushChainProvider } from '@/contexts/PushChainContext';
 
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space-grotesk" })
 
@@ -41,13 +42,15 @@ export default function RootLayout({
         '--pw-core-bg-primary-color': '#FFFFFF33',
       }}
     >
-      <html lang="en" className={`${spaceGrotesk.variable} antialiased`}>
-        <body className="font-sans">
-          <Suspense fallback={<div>Loading...</div>}>
-            {children}
-          </Suspense>
-        </body>
-      </html>
+      <PushChainProvider config={{ network: 'testnet' }}>
+        <html lang="en" className={`${spaceGrotesk.variable} antialiased`}>
+          <body className="font-sans">
+            <Suspense fallback={<div>Loading...</div>}>
+              {children}
+            </Suspense>
+          </body>
+        </html>
+      </PushChainProvider>
     </PushUniversalWalletProvider>
 
   )

@@ -9,7 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@pushchain/core": "^2.0.9",
     "@pushchain/ui-kit": "^2.0.9",
+    "ethers": "^6.15.0",
     "next": "15.5.4",
     "pinata": "^2.5.1",
     "pinata-web3": "^0.5.4",
